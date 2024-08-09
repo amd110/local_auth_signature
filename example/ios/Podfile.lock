@@ -1,0 +1,28 @@
+PODS:
+  - Flutter (1.0.0)
+  - integration_test (0.0.1):
+    - Flutter
+  - local_auth_signature (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - integration_test (from `.symlinks/plugins/integration_test/ios`)
+  - local_auth_signature (from `.symlinks/plugins/local_auth_signature/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  integration_test:
+    :path: ".symlinks/plugins/integration_test/ios"
+  local_auth_signature:
+    :path: ".symlinks/plugins/local_auth_signature/ios"
+
+SPEC CHECKSUMS:
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  integration_test: ce0a3ffa1de96d1a89ca0ac26fca7ea18a749ef4
+  local_auth_signature: 645b2a3f89e999a4d122fea701452895f398ae12
+
+PODFILE CHECKSUM: 8518cc03ba7b942c44ef308c55cbd5c1cf60717b
+
+COCOAPODS: 1.14.3
