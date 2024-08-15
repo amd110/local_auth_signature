@@ -54,6 +54,10 @@ abstract class LocalAuthSignaturePlatform extends PlatformInterface {
     throw UnimplementedError('isKeyPairExists() has not been implemented.');
   }
 
+  Future<String> getBase64String(String data,int? flags) {
+    throw UnimplementedError('isKeyPairExists() has not been implemented.');
+  }
+
   Future<String?> sign({
     required String keyStoreAlias,
     required String payload,

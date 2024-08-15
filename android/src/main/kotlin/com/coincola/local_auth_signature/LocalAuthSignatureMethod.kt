@@ -22,4 +22,7 @@ object LocalAuthSignatureMethod {
 
     const val DELETE_KEY_PAIR = "deleteKeyPair"
 
+    const val BASE64_ENCODE = "base64Encode"
+
+
 }

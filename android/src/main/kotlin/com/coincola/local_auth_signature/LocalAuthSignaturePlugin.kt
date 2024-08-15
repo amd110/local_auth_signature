@@ -64,6 +64,13 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
+            LocalAuthSignatureMethod.BASE64_ENCODE -> {
+                val data = call.argument<String>("data")
+                val flags = call.argument<Int>("flags")
+                val base64Str = String(Base64.encode(data!!.toByteArray(), flags ?: Base64.DEFAULT))
+                result.success(base64Str)
+            }
+
             LocalAuthSignatureMethod.IS_SUPPORTED -> {
                 isSupported(result)
             }
@@ -163,8 +170,14 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
         if (isKeyPairExists(keyStoreAlias)) {
 //            map[LocalAuthSignatureResponse.PRIVATE_KEY] =
 //                Base64.encodeToString(getPrivateKey(keyStoreAlias).encoded, Base64.DEFAULT)
+
             map[LocalAuthSignatureResponse.PUBLIC_KEY] =
-                Base64.encodeToString(getPublicKey(keyStoreAlias).encoded, Base64.DEFAULT)
+                String(
+                    Base64.encode(
+                        getPublicKey(keyStoreAlias).encoded,
+                        Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
+                    )
+                )
         } else {
             val keyPairGenerator =
                 KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore")
@@ -184,8 +197,14 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 }.build()
             )
             val keyPair = keyPairGenerator.generateKeyPair()
+
             map[LocalAuthSignatureResponse.PUBLIC_KEY] =
-                Base64.encodeToString(keyPair.public.encoded, Base64.DEFAULT)
+                String(
+                    Base64.encode(
+                        keyPair.public.encoded,
+                        Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
+                    )
+                )
         }
 
         result.success(map)
@@ -224,7 +243,12 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                         val privateKey = getPrivateKey(keyStoreAlias)
                         signature.initSign(privateKey)
                         signature.update(data.toByteArray())
-                        val signatureData = Base64.encodeToString(signature.sign(), Base64.DEFAULT)
+                        val signatureData = String(
+                            Base64.encode(
+                                signature.sign(),
+                                Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
+                            )
+                        )
                         result.success(signatureData)
                     }
 

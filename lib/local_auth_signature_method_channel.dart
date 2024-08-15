@@ -115,4 +115,11 @@ class MethodChannelLocalAuthSignature extends LocalAuthSignaturePlatform {
           false;
     }
   }
+
+  @override
+  Future<String> getBase64String(String data, int? flags) async {
+    return (await methodChannel.invokeMethod<String>(
+            'base64Encode', {'data': data, if (flags != null) 'flags': flags})) ??
+        '';
+  }
 }

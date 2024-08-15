@@ -64,4 +64,8 @@ class LocalAuthSignature {
         androidPromptInfo: androidPromptInfo,
         iosPromptInfo: iosPromptInfo);
   }
+
+  Future<String> getBase64String(String data, int? flags) {
+    return LocalAuthSignaturePlatform.instance.getBase64String(data, flags);
+  }
 }
