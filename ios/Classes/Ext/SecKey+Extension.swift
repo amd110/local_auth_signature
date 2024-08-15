@@ -17,6 +17,9 @@ extension SecKey {
         return b64
             .replacingOccurrences(of: "\r", with: "")
             .replacingOccurrences(of: "\n", with: "")
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
     }
     
     func toBase64Default() -> String? {
