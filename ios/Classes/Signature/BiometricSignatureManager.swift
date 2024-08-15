@@ -74,7 +74,7 @@ public class BiometricSignatureManager : SignatureManager {
                 return SignatureResult(signature: nil, status: SignatureBiometricStatus.error)
             }
             
-            let signedString = signature!.base64EncodedString(options: [])
+            let signedString = signature!.toBase64()
             
             return SignatureResult(signature: signedString, status: SignatureBiometricStatus.success)
         }.await()
