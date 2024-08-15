@@ -1,15 +1,15 @@
 class AndroidPromptInfo {
-  String? title;
-  String? subtitle;
+  String title;
+  String subtitle;
   String? description;
-  String? negativeButton;
+  String negativeButton;
   bool invalidatedByBiometricEnrollment;
 
   AndroidPromptInfo({
-    this.title,
-    this.subtitle,
+    required this.title,
+    required this.subtitle,
     this.description,
-    this.negativeButton,
+    required this.negativeButton,
     this.invalidatedByBiometricEnrollment = false,
   });
 }

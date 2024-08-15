@@ -2,7 +2,7 @@
 
 class KeyPair {
   final String publicKey;
-  final String privateKey;
+  final String? privateKey;
 
   KeyPair({required this.publicKey, required this.privateKey});
 }

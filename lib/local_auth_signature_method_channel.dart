@@ -32,7 +32,7 @@ class MethodChannelLocalAuthSignature extends LocalAuthSignaturePlatform {
       return MapEntry(key as String, value != null ? value as String : '');
     });
     if (dictionary != null && dictionary.isNotEmpty) {
-      return KeyPair(privateKey: dictionary['privateKey']!, publicKey: dictionary['publicKey']!);
+      return KeyPair(privateKey: dictionary['privateKey'], publicKey: dictionary['publicKey']!);
     } else {
       return null;
     }
@@ -78,7 +78,7 @@ class MethodChannelLocalAuthSignature extends LocalAuthSignaturePlatform {
         'payload': payload,
         'title': androidPromptInfo.title,
         'subtitle': androidPromptInfo.subtitle,
-        'description': androidPromptInfo.description,
+        if (androidPromptInfo.description != null) 'description': androidPromptInfo.description,
         'negativeButton': androidPromptInfo.negativeButton,
         'invalidatedByBiometricEnrollment': androidPromptInfo.invalidatedByBiometricEnrollment,
       });
@@ -108,7 +108,7 @@ class MethodChannelLocalAuthSignature extends LocalAuthSignaturePlatform {
             'signature': signature,
             'title': androidPromptInfo.title,
             'subtitle': androidPromptInfo.subtitle,
-            'description': androidPromptInfo.description,
+            if (androidPromptInfo.description != null) 'description': androidPromptInfo.description,
             'negativeButton': androidPromptInfo.negativeButton,
             'invalidatedByBiometricEnrollment': androidPromptInfo.invalidatedByBiometricEnrollment,
           }) ??

@@ -3,6 +3,7 @@ package com.coincola.local_auth_signature
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Base64
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -160,10 +161,10 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
         }
         val map = mutableMapOf<String, String>()
         if (isKeyPairExists(keyStoreAlias)) {
-            map[LocalAuthSignatureResponse.PRIVATE_KEY] =
-                getPrivateKey(keyStoreAlias).encoded.toString(utf8)
+//            map[LocalAuthSignatureResponse.PRIVATE_KEY] =
+//                Base64.encodeToString(getPrivateKey(keyStoreAlias).encoded, Base64.DEFAULT)
             map[LocalAuthSignatureResponse.PUBLIC_KEY] =
-                getPublicKey(keyStoreAlias).encoded.toString(utf8)
+                Base64.encodeToString(getPublicKey(keyStoreAlias).encoded, Base64.DEFAULT)
         } else {
             val keyPairGenerator =
                 KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore")
@@ -183,10 +184,8 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 }.build()
             )
             val keyPair = keyPairGenerator.generateKeyPair()
-            map[LocalAuthSignatureResponse.PRIVATE_KEY] =
-                keyPair.private.encoded.toString(utf8)
             map[LocalAuthSignatureResponse.PUBLIC_KEY] =
-                keyPair.public.encoded.toString(utf8)
+                Base64.encodeToString(keyPair.public.encoded, Base64.DEFAULT)
         }
 
         result.success(map)
@@ -225,7 +224,7 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                         val privateKey = getPrivateKey(keyStoreAlias)
                         signature.initSign(privateKey)
                         signature.update(data.toByteArray())
-                        val signatureData = signature.sign()
+                        val signatureData = Base64.encodeToString(signature.sign(), Base64.DEFAULT)
                         result.success(signatureData)
                     }
 
@@ -284,7 +283,8 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
             val signature = Signature.getInstance("SHA256withECDSA")
             signature.initVerify(getPublicKey(keyStoreAlias))
             signature.update(data.toByteArray())
-            result.success(signature.verify(bioSignature.toByteArray()))
+            val respByte = Base64.decode(bioSignature, Base64.DEFAULT)
+            result.success(signature.verify(respByte))
         } catch (e: Exception) {
             result.error(LocalAuthSignatureError.ERROR, e.message, e)
         }

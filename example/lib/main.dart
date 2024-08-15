@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth_signature/local_auth_signature.dart';
@@ -56,6 +58,7 @@ class _MyAppState extends State<MyApp> {
         ),
         iosPromptInfo: IOSPromptInfo(reason: 'Please allow biometric'),
       );
+
       setState(() {
         _signature = signature;
       });
