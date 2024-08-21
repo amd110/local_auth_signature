@@ -10,9 +10,6 @@ object LocalAuthSignatureArgs {
     const val BIO_PK = "pk"
     const val BIO_PAYLOAD = "payload"
     const val BIO_SIGNATURE = "signature"
-    const val BIO_TITLE = "title"
-    const val BIO_SUBTITLE = "subtitle"
-    const val BIO_DESCRIPTION = "description"
-    const val BIO_NEGATIVE_BUTTON = "negativeButton"
+    const val USER_AUTHENTICATION_REQUIRED = "userAuthenticationRequired"
     const val BIO_INVALIDATED_BY_BIOMETRIC_ENROLLMENT = "invalidatedByBiometricEnrollment"
 }

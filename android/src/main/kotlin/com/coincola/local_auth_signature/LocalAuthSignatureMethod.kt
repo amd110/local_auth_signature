@@ -9,11 +9,6 @@ object LocalAuthSignatureMethod {
     const val CREATE_KEYPAIR = "createKeyPair"
     const val SIGN = "sign"
     const val VERIFY = "verify"
-
-    const val IS_SUPPORTED = "isSupported"
-
-    const val IS_AVAILABLE = "isAvailable"
-
     const val GET_PRIVATE_KEY = "getPrivateKey"
 
     const val GET_PUBLIC_KEY = "getPublicKey"

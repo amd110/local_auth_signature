@@ -1,6 +1,3 @@
-import 'package:local_auth_signature/src/android_prompt_info.dart';
-import 'package:local_auth_signature/src/ios_prompt_info.dart';
-import 'package:local_auth_signature/src/key_pair.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'local_auth_signature_method_channel.dart';
@@ -26,15 +23,15 @@ abstract class LocalAuthSignaturePlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<bool> isSupported() {
-    throw UnimplementedError('isSupported() has not been implemented.');
-  }
-
   // Future<bool> isAvailable() {
   //   throw UnimplementedError('isAvailable() has not been implemented.');
   // }
 
-  Future<KeyPair?> createKeyPair(String keyStoreAlias) {
+  Future<String> createKeyPair({
+    required String keyStoreAlias,
+    bool userAuthenticationRequired = true,
+    bool invalidatedByBiometricEnrollment = false,
+  }) {
     throw UnimplementedError('createKeyPair() has not been implemented.');
   }
 
@@ -42,7 +39,7 @@ abstract class LocalAuthSignaturePlatform extends PlatformInterface {
     throw UnimplementedError('deleteKeyPair() has not been implemented.');
   }
 
-  Future<String?> getPublicKey(String keyStoreAlias) {
+  Future<String> getPublicKey(String keyStoreAlias) {
     throw UnimplementedError('getPublicKey() has not been implemented.');
   }
 
@@ -54,16 +51,11 @@ abstract class LocalAuthSignaturePlatform extends PlatformInterface {
     throw UnimplementedError('isKeyPairExists() has not been implemented.');
   }
 
-  Future<String> getBase64String(String data,int? flags) {
+  Future<String> getBase64String(String data, int? flags) {
     throw UnimplementedError('isKeyPairExists() has not been implemented.');
   }
 
-  Future<String?> sign({
-    required String keyStoreAlias,
-    required String payload,
-    required AndroidPromptInfo androidPromptInfo,
-    required IOSPromptInfo iosPromptInfo,
-  }) {
+  Future<String> sign({required String keyStoreAlias, required String payload}) {
     throw UnimplementedError('sign() has not been implemented.');
   }
 
@@ -71,8 +63,6 @@ abstract class LocalAuthSignaturePlatform extends PlatformInterface {
     required String keyStoreAlias,
     required String payload,
     required String signature,
-    required AndroidPromptInfo androidPromptInfo,
-    required IOSPromptInfo iosPromptInfo,
   }) {
     throw UnimplementedError('verify() has not been implemented.');
   }

@@ -52,7 +52,6 @@ android {
     dependencies {
         testImplementation("org.jetbrains.kotlin:kotlin-test")
         testImplementation("org.mockito:mockito-core:5.0.0")
-        implementation 'androidx.biometric:biometric-ktx:1.2.0-alpha05'
     }
 
     testOptions {

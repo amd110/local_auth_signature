@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth_signature/local_auth_signature.dart';
@@ -26,16 +24,9 @@ class _MyAppState extends State<MyApp> {
   String? _verified = '';
   String? _status = '';
 
-  void _checkIsBiometricChanged() async {
-    final status = await _localAuthSignature.isSupported();
-    setState(() {
-      _status = status.toString();
-    });
-  }
-
   void _createKeyPair() async {
     try {
-      final publicKey = (await _localAuthSignature.createKeyPair(_key))?.publicKey;
+      final publicKey = (await _localAuthSignature.createKeyPair(keyStoreAlias: _key));
       setState(() {
         _publicKey = publicKey;
       });
@@ -50,13 +41,6 @@ class _MyAppState extends State<MyApp> {
       final signature = await _localAuthSignature.sign(
         keyStoreAlias: _key,
         payload: _payload,
-        androidPromptInfo: AndroidPromptInfo(
-          title: 'BIOMETRIC',
-          subtitle: 'Please allow biometric',
-          negativeButton: 'CANCEL',
-          invalidatedByBiometricEnrollment: true,
-        ),
-        iosPromptInfo: IOSPromptInfo(reason: 'Please allow biometric'),
       );
 
       setState(() {
@@ -74,13 +58,6 @@ class _MyAppState extends State<MyApp> {
         keyStoreAlias: _key,
         payload: _payload,
         signature: _signature!,
-        androidPromptInfo: AndroidPromptInfo(
-          title: 'BIOMETRIC',
-          subtitle: 'Please allow biometric',
-          negativeButton: 'CANCEL',
-          invalidatedByBiometricEnrollment: true,
-        ),
-        iosPromptInfo: IOSPromptInfo(reason: 'Please allow biometric'),
       );
       setState(() {
         _verified = '$verified';
@@ -130,11 +107,6 @@ class _MyAppState extends State<MyApp> {
                 const Text('Biometric Changed'),
                 const SizedBox(height: 16),
                 CardBox(child: Text('$_status')),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _checkIsBiometricChanged,
-                  child: const Text('Check Biometric Changed'),
-                ),
                 const SizedBox(height: 16),
                 const Text('Signature'),
                 const SizedBox(height: 16),

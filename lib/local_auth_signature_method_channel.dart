@@ -1,8 +1,3 @@
-import 'dart:io';
-
-import 'package:local_auth_signature/src/android_prompt_info.dart';
-import 'package:local_auth_signature/src/ios_prompt_info.dart';
-import 'package:local_auth_signature/src/key_pair.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -15,27 +10,17 @@ class MethodChannelLocalAuthSignature extends LocalAuthSignaturePlatform {
   final methodChannel = const MethodChannel('local_auth_signature');
 
   @override
-  Future<bool> isSupported() async {
-    return (await methodChannel.invokeMethod<bool>('isSupported')) ?? false;
-  }
-
-  // @override
-  // Future<bool> isAvailable() async {
-  //   return (await methodChannel.invokeMethod<bool>('isAvailable')) ?? false;
-  // }
-
-  @override
-  Future<KeyPair?> createKeyPair(String keyStoreAlias) async {
-    final response = await methodChannel
-        .invokeMethod<Map<Object?, Object?>>('createKeyPair', {'key': keyStoreAlias});
-    final Map<String, String>? dictionary = response?.map((key, value) {
-      return MapEntry(key as String, value != null ? value as String : '');
+  Future<String> createKeyPair({
+    required String keyStoreAlias,
+    bool userAuthenticationRequired = true,
+    bool invalidatedByBiometricEnrollment = false,
+  }) async {
+    final publicKey = await methodChannel.invokeMethod<String>('createKeyPair', {
+      'key': keyStoreAlias,
+      'userAuthenticationRequired': userAuthenticationRequired,
+      'invalidatedByBiometricEnrollment': invalidatedByBiometricEnrollment
     });
-    if (dictionary != null && dictionary.isNotEmpty) {
-      return KeyPair(privateKey: dictionary['privateKey'], publicKey: dictionary['publicKey']!);
-    } else {
-      return null;
-    }
+    return publicKey!;
   }
 
   @override
@@ -44,8 +29,8 @@ class MethodChannelLocalAuthSignature extends LocalAuthSignaturePlatform {
   }
 
   @override
-  Future<String?> getPublicKey(String keyStoreAlias) {
-    return methodChannel.invokeMethod<String>('getPublicKey', {'key': keyStoreAlias});
+  Future<String> getPublicKey(String keyStoreAlias) async {
+    return (await methodChannel.invokeMethod<String>('getPublicKey', {'key': keyStoreAlias}))!;
   }
 
   @override
@@ -60,29 +45,14 @@ class MethodChannelLocalAuthSignature extends LocalAuthSignaturePlatform {
   }
 
   @override
-  Future<String?> sign({
+  Future<String> sign({
     required String keyStoreAlias,
     required String payload,
-    required AndroidPromptInfo androidPromptInfo,
-    required IOSPromptInfo iosPromptInfo,
   }) async {
-    if (Platform.isIOS) {
-      return await methodChannel.invokeMethod<String>('sign', {
-        'key': keyStoreAlias,
-        'payload': payload,
-        'reason': iosPromptInfo.reason,
-      });
-    } else {
-      return await methodChannel.invokeMethod<String>('sign', {
-        'key': keyStoreAlias,
-        'payload': payload,
-        'title': androidPromptInfo.title,
-        'subtitle': androidPromptInfo.subtitle,
-        if (androidPromptInfo.description != null) 'description': androidPromptInfo.description,
-        'negativeButton': androidPromptInfo.negativeButton,
-        'invalidatedByBiometricEnrollment': androidPromptInfo.invalidatedByBiometricEnrollment,
-      });
-    }
+    return (await methodChannel.invokeMethod<String>('sign', {
+      'key': keyStoreAlias,
+      'payload': payload,
+    }))!;
   }
 
   @override
@@ -90,30 +60,13 @@ class MethodChannelLocalAuthSignature extends LocalAuthSignaturePlatform {
     required String keyStoreAlias,
     required String payload,
     required String signature,
-    required AndroidPromptInfo androidPromptInfo,
-    required IOSPromptInfo iosPromptInfo,
   }) async {
-    if (Platform.isIOS) {
-      return await methodChannel.invokeMethod<bool>('verify', {
-            'key': keyStoreAlias,
-            'payload': payload,
-            'signature': signature,
-            'reason': iosPromptInfo.reason,
-          }) ??
-          false;
-    } else {
-      return await methodChannel.invokeMethod<bool>('verify', {
-            'key': keyStoreAlias,
-            'payload': payload,
-            'signature': signature,
-            'title': androidPromptInfo.title,
-            'subtitle': androidPromptInfo.subtitle,
-            if (androidPromptInfo.description != null) 'description': androidPromptInfo.description,
-            'negativeButton': androidPromptInfo.negativeButton,
-            'invalidatedByBiometricEnrollment': androidPromptInfo.invalidatedByBiometricEnrollment,
-          }) ??
-          false;
-    }
+    return await methodChannel.invokeMethod<bool>('verify', {
+          'key': keyStoreAlias,
+          'payload': payload,
+          'signature': signature,
+        }) ??
+        false;
   }
 
   @override

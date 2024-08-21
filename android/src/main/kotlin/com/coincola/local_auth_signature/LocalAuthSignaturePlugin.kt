@@ -4,18 +4,12 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.embedding.engine.plugins.activity.ActivityAware
-import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import java.lang.Exception
 import java.nio.charset.Charset
 import java.security.KeyPairGenerator
 import java.security.KeyStore
@@ -27,14 +21,12 @@ import java.util.concurrent.Executor
 
 /** LocalAuthSignaturePlugin */
 
-class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
+class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler {
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
     /// This local reference serves to register the plugin with the Flutter Engine and unregister it
     /// when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
-
-    private var activity: FragmentActivity? = null
 
     private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
@@ -48,20 +40,6 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
         channel.setMethodCallHandler(this)
     }
 
-    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        activity = binding.activity as? FragmentActivity
-    }
-
-    override fun onDetachedFromActivityForConfigChanges() {}
-
-    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-        activity = binding.activity as? FragmentActivity
-    }
-
-    override fun onDetachedFromActivity() {
-        activity = null
-    }
-
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             LocalAuthSignatureMethod.BASE64_ENCODE -> {
@@ -69,10 +47,6 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 val flags = call.argument<Int>("flags")
                 val base64Str = String(Base64.encode(data!!.toByteArray(), flags ?: Base64.DEFAULT))
                 result.success(base64Str)
-            }
-
-            LocalAuthSignatureMethod.IS_SUPPORTED -> {
-                isSupported(result)
             }
 
             LocalAuthSignatureMethod.CREATE_KEYPAIR -> {
@@ -90,13 +64,7 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
             }
 
             LocalAuthSignatureMethod.GET_PRIVATE_KEY -> {
-                val keyStoreAlias = call.argument<String>(LocalAuthSignatureArgs.BIO_KEY)
-                if (keyStoreAlias == null) {
-                    result.error(LocalAuthSignatureError.KEY_IS_NULL, "keyStoreAlias is null", null)
-                    return
-                }
-                val privateKey = getPrivateKey(keyStoreAlias).encoded.toString(utf8)
-                result.success(privateKey)
+                result.notImplemented()
             }
 
             LocalAuthSignatureMethod.IS_KEYPAIR_EXISTS -> {
@@ -132,18 +100,6 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
         }
     }
 
-    private fun isSupported(result: Result) {
-        if (activity != null) {
-            val biometricManager = BiometricManager.from(activity!!)
-            val status =
-                biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-            result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && status != BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE && status != BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED)
-        } else {
-            result.error(LocalAuthSignatureError.NO_FRAGMENT_ACTIVITY, "activity is null", null)
-        }
-    }
-
-
     private fun isKeyPairExists(keystoreAlias: String): Boolean {
         return keyStore.containsAlias(keystoreAlias)
     }
@@ -162,22 +118,21 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
     @Suppress("DEPRECATION")
     private fun createKeyPair(call: MethodCall, result: Result) {
         val keyStoreAlias = call.argument<String>(LocalAuthSignatureArgs.BIO_KEY)
+        val userAuthenticationRequired =
+            call.argument<Boolean>(LocalAuthSignatureArgs.USER_AUTHENTICATION_REQUIRED) ?: false
+        val invalidatedByBiometricEnrollment =
+            call.argument<Boolean>(LocalAuthSignatureArgs.BIO_INVALIDATED_BY_BIOMETRIC_ENROLLMENT)
+                ?: false
         if (keyStoreAlias == null) {
             result.error(LocalAuthSignatureError.KEY_IS_NULL, "keyStoreAlias is null", null)
             return
         }
-        val map = mutableMapOf<String, String>()
+        val publicKey: String
         if (isKeyPairExists(keyStoreAlias)) {
-//            map[LocalAuthSignatureResponse.PRIVATE_KEY] =
-//                Base64.encodeToString(getPrivateKey(keyStoreAlias).encoded, Base64.DEFAULT)
-
-            map[LocalAuthSignatureResponse.PUBLIC_KEY] =
-                String(
-                    Base64.encode(
-                        getPublicKey(keyStoreAlias).encoded,
-                        Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
-                    )
-                )
+            publicKey = Base64.encodeToString(
+                getPublicKey(keyStoreAlias).encoded,
+                Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE
+            )
         } else {
             val keyPairGenerator =
                 KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore")
@@ -188,26 +143,26 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
                 ).apply {
                     setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
                     setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
-                    setUserAuthenticationRequired(true)
+                    setUserAuthenticationRequired(userAuthenticationRequired)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         setUserAuthenticationParameters(10, KeyProperties.AUTH_BIOMETRIC_STRONG)
                     } else {
                         setUserAuthenticationValidityDurationSeconds(10)
                     }
+                    if (userAuthenticationRequired) {
+                        setInvalidatedByBiometricEnrollment(invalidatedByBiometricEnrollment)
+                    }
+
                 }.build()
             )
             val keyPair = keyPairGenerator.generateKeyPair()
-
-            map[LocalAuthSignatureResponse.PUBLIC_KEY] =
-                String(
-                    Base64.encode(
-                        keyPair.public.encoded,
-                        Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
-                    )
-                )
+            publicKey = Base64.encodeToString(
+                keyPair.public.encoded,
+                Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE
+            )
         }
 
-        result.success(map)
+        result.success(publicKey)
     }
 
     private fun sign(call: MethodCall, result: Result) {
@@ -221,70 +176,19 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
             result.error(LocalAuthSignatureError.PAYLOAD_IS_NULL, "payload is null", null)
             return
         }
-        if (activity == null) {
-            result.error(LocalAuthSignatureError.NO_FRAGMENT_ACTIVITY, "activity is null", null)
-            return
-        }
-        val title = call.argument<String?>(LocalAuthSignatureArgs.BIO_TITLE) ?: ""
-        val subtitle = call.argument<String?>(LocalAuthSignatureArgs.BIO_SUBTITLE) ?: ""
-        val description = call.argument<String?>(LocalAuthSignatureArgs.BIO_DESCRIPTION)
-        val negativeButton =
-            call.argument<String?>(LocalAuthSignatureArgs.BIO_NEGATIVE_BUTTON) ?: ""
         try {
-            authenticate(
-                activity!!,
-                title,
-                subtitle,
-                negativeButton,
-                description,
-                object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationSucceeded(authenticationResult: BiometricPrompt.AuthenticationResult) {
-                        val signature = Signature.getInstance("SHA256withECDSA")
-                        val privateKey = getPrivateKey(keyStoreAlias)
-                        signature.initSign(privateKey)
-                        signature.update(data.toByteArray())
-                        val signatureData = String(
-                            Base64.encode(
-                                signature.sign(),
-                                Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
-                            )
-                        )
-                        result.success(signatureData)
-                    }
-
-                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                        result.error(errorCode.toString(), errString.toString(), null)
-                    }
-
-                    override fun onAuthenticationFailed() {
-                        result.error(LocalAuthSignatureError.ERROR, "onAuthenticationFailed", null)
-                    }
-                })
-
+            val signature = Signature.getInstance("SHA256withECDSA")
+            val privateKey = getPrivateKey(keyStoreAlias)
+            signature.initSign(privateKey)
+            signature.update(data.toByteArray())
+            val signatureData = Base64.encodeToString(
+                signature.sign(),
+                Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE
+            )
+            result.success(signatureData)
         } catch (e: Exception) {
             result.error(LocalAuthSignatureError.ERROR, e.message, e)
         }
-    }
-
-    private fun authenticate(
-        activity: FragmentActivity,
-        title: String,
-        subtitle: String,
-        negativeButtonText: String,
-        description: String?,
-        callback: BiometricPrompt.AuthenticationCallback,
-    ) {
-        val biometricPrompt = BiometricPrompt(activity, executor, callback)
-        val promptInfo =
-            BiometricPrompt.PromptInfo.Builder()
-                .setTitle(title)
-                .setSubtitle(subtitle)
-                .setNegativeButtonText(negativeButtonText)
-                .setDescription(description)
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                .setConfirmationRequired(false)
-                .build()
-        biometricPrompt.authenticate(promptInfo)
     }
 
     private fun verify(call: MethodCall, result: Result) {
@@ -307,7 +211,8 @@ class LocalAuthSignaturePlugin : FlutterPlugin, MethodCallHandler, ActivityAware
             val signature = Signature.getInstance("SHA256withECDSA")
             signature.initVerify(getPublicKey(keyStoreAlias))
             signature.update(data.toByteArray())
-            val respByte = Base64.decode(bioSignature, Base64.DEFAULT)
+            val respByte =
+                Base64.decode(bioSignature, Base64.NO_PADDING or Base64.NO_WRAP or Base64.URL_SAFE)
             result.success(signature.verify(respByte))
         } catch (e: Exception) {
             result.error(LocalAuthSignatureError.ERROR, e.message, e)
