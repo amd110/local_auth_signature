@@ -3,6 +3,8 @@ import UIKit
 import LocalAuthentication
 
 public class LocalAuthSignaturePlugin: NSObject, FlutterPlugin {
+    let cryptoManager = CryptoManager()
+    
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "local_auth_signature", binaryMessenger: registrar.messenger())
         let instance = LocalAuthSignaturePlugin()
@@ -84,9 +86,8 @@ public class LocalAuthSignaturePlugin: NSObject, FlutterPlugin {
                 )
                 return
             }
-            let keyManager = KeyPairManager()
-            let keyPair =  keyManager.get(name: key)
-            let privateKey = keyPair?.privateKey?.toBase64()
+            
+            let privateKey = cryptoManager.getPrivateKey(name: key)?.toBase64()
             result(privateKey)
             break
         case SwiftLocalAuthSignatureMethod.getPublicKey:
@@ -110,9 +111,7 @@ public class LocalAuthSignaturePlugin: NSObject, FlutterPlugin {
                 )
                 return
             }
-            let keyManager = KeyPairManager()
-            let keyPair =  keyManager.get(name: key)
-            let publicKey = keyPair?.publicKey?.toBase64()
+            let publicKey = cryptoManager.getPublicKey(name: key)?.toBase64()
             result(publicKey)
             break
         case SwiftLocalAuthSignatureMethod.isKeyPairExists:
@@ -136,9 +135,7 @@ public class LocalAuthSignaturePlugin: NSObject, FlutterPlugin {
                 )
                 return
             }
-            let keyManager = KeyPairManager()
-            let keyPair = keyManager.get(name: key)
-            result(keyPair != nil)
+            result(cryptoManager.keyPairExists(name: key))
             break
         case SwiftLocalAuthSignatureMethod.Verify:
             guard let args = call.arguments as? Dictionary<String, String> else {
@@ -146,16 +143,6 @@ public class LocalAuthSignaturePlugin: NSObject, FlutterPlugin {
                     FlutterError(
                         code: SwiftLocalAuthSignatureError.ArgsIsNull,
                         message: "Arguments is null",
-                        details: nil
-                    )
-                )
-                return
-            }
-            guard let reason = args[SwiftLocalAuthSignatureArgs.Reason] else {
-                result(
-                    FlutterError(
-                        code: SwiftLocalAuthSignatureError.ReasonIsNull,
-                        message: "Reason is null",
                         details: nil
                     )
                 )
@@ -191,8 +178,7 @@ public class LocalAuthSignaturePlugin: NSObject, FlutterPlugin {
                 )
                 return
             }
-            let signatureBiometricManager = BiometricSignatureManager()
-            let verify = signatureBiometricManager.verify(key: key, message: payload, signature: signature)
+            let verify = cryptoManager.verify(signature: signature.decodeBase64UrlSafe()!, for: payload.data(using: .utf8)!, with: cryptoManager.getPublicKey(name: key)!)
             result(verify)
             break
         case SwiftLocalAuthSignatureMethod.deleteKeyPair:
@@ -216,9 +202,7 @@ public class LocalAuthSignaturePlugin: NSObject, FlutterPlugin {
                 )
                 return
             }
-            let keyManager = KeyPairManager()
-            keyManager.removeKey(name: key)
-            result(nil)
+            result(cryptoManager.deleteKeyPair(name: key))
             break;
         default:
             result(FlutterMethodNotImplemented)
@@ -236,12 +220,12 @@ public class LocalAuthSignaturePlugin: NSObject, FlutterPlugin {
             )
             return
         }
-        let keyManager = KeyPairManager()
-        let keyPair = keyManager.getOrCreate(name: key)
+        let cryptoManager = CryptoManager()
+        //        let keyManager = KeyPairManager()
+        //        let keyPair = keyManager.getOrCreate(name: key)
+        let keyPair = cryptoManager.createKeyPair(name: key)
         let publicKey = keyPair?.publicKey?.toBase64()
-        let privateKey = keyPair?.privateKey?.toBase64()
-        let dictionary: [String: String?] = [LocalAuthSignatureResponse.publicKey: publicKey,  LocalAuthSignatureResponse.privateKey: privateKey]
-        result(dictionary)
+        result(publicKey)
     }
     private func sign(args: Dictionary<String, String>, result: @escaping FlutterResult){
         guard let key = args[SwiftLocalAuthSignatureArgs.Key] else {
@@ -264,8 +248,8 @@ public class LocalAuthSignaturePlugin: NSObject, FlutterPlugin {
             )
             return
         }
-        let signatureBiometricManager = BiometricSignatureManager()
-        let signatureResult = signatureBiometricManager.sign(key: key, message: payload)
+        let  signatureResult = cryptoManager.sign(data: payload.data(using: .utf8)!, with: cryptoManager.getPrivateKey(name: key)!)
+        
         if signatureResult.status == SignatureBiometricStatus.success {
             result(signatureResult.signature)
         } else {

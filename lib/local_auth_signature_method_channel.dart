@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -15,11 +17,17 @@ class MethodChannelLocalAuthSignature extends LocalAuthSignaturePlatform {
     bool userAuthenticationRequired = true,
     bool invalidatedByBiometricEnrollment = false,
   }) async {
-    final publicKey = await methodChannel.invokeMethod<String>('createKeyPair', {
-      'key': keyStoreAlias,
-      'userAuthenticationRequired': userAuthenticationRequired,
-      'invalidatedByBiometricEnrollment': invalidatedByBiometricEnrollment
-    });
+    final String? publicKey;
+    if (Platform.isAndroid) {
+      publicKey = await methodChannel.invokeMethod<String>('createKeyPair', {
+        'key': keyStoreAlias,
+        'userAuthenticationRequired': userAuthenticationRequired,
+        'invalidatedByBiometricEnrollment': invalidatedByBiometricEnrollment
+      });
+    } else {
+      publicKey = await methodChannel.invokeMethod<String>('createKeyPair', {'key': keyStoreAlias});
+    }
+
     return publicKey!;
   }
 

@@ -19,8 +19,7 @@ class _MyAppState extends State<MyApp> {
   final _key = 'coincola.test.key';
   final _payload = 'Hello';
   String? _publicKey = '';
-  String? _signature =
-      'MEUCIBIcOQng5BqDg9tOjayHDMPgiZT48bWJ0AzkSM0WGVcmAiEAkEGVzlZeJuJCz2IUnqJ/c1zzla1TErcnyU1nzkkN/dA=';
+  String? _signature = '';
   String? _verified = '';
   String? _status = '';
 
